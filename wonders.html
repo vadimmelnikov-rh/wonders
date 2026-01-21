@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memo: Природные чудеса России</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .info-item {
+            text-align: center;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 768px) {
+            .board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        .card {
+            width: 120px;
+            height: 150px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .card-front {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            color: white;
+            font-size: 3rem;
+        }
+        
+        .card-back {
+            background-color: white;
+            transform: rotateY(180deg);
+            overflow: hidden;
+        }
+        
+        .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .card.matched .card-back {
+            border: 3px solid #27ae60;
+        }
+        
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #c0392b;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .modal p {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Memo: Природные чудеса России</h1>
+        <p>Открой для себя удивительные природные достопримечательности нашей страны!</p>
+    </header>
+    
+    <div class="game-info">
+        <div class="info-item">Ходы: <span id="moves">0</span></div>
+        <div class="info-item">Время: <span id="timer">0</span> сек.</div>
+        <div class="info-item">Пары: <span id="pairs">0</span>/25</div>
+    </div>
+    
+    <div class="board" id="board"></div>
+    
+    <div class="controls">
+        <button id="restart">Начать заново</button>
+    </div>
+    
+    <div class="modal" id="win-modal">
+        <div class="modal-content">
+            <h2>Поздравляем!</h2>
+            <p>Вы нашли все пары за <span id="final-moves">0</span> ходов и <span id="final-time">0</span> секунд!</p>
+            <button id="play-again">Играть снова</button>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Игра создана для ознакомления с природными чудесами России. Все изображения находятся в общественном достоянии.</p>
+    </footer>
+
+    <script>
+        // Природные чудеса России с изображениями из общественного достояния
+        const wonders = [
+            { name: "Озеро Байкал", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Baikal-winter.jpg/640px-Baikal-winter.jpg" },
+            { name: "Долина гейзеров", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Valley_of_Geysers%2C_Kamchatka.jpg/640px-Valley_of_Geysers%2C_Kamchatka.jpg" },
+            { name: "Эльбрус", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Mount_Elbrus_May_2008.jpg/640px-Mount_Elbrus_May_2008.jpg" },
+            { name: "Ленские столбы", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Lena_Pillars_3.jpg/640px-Lena_Pillars_3.jpg" },
+            { name: "Камчатские вулканы", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Klyuchevskaya_Sopka_volcano%2C_Kamchatka_%28photo%29.jpg/640px-Klyuchevskaya_Sopka_volcano%2C_Kamchatka_%28photo%29.jpg" },
+            { name: "Плато Путорана", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Putorana_plateau.jpg/640px-Putorana_plateau.jpg" },
+            { name: "Куршская коса", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Kurshskaya_kosa.jpg/640px-Kurshskaya_kosa.jpg" },
+            { name: "Столбы выветривания", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Mansijskie_stolby.jpg/640px-Mansijskie_stolby.jpg" },
+            { name: "Алтайские горы", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Belukha_mountain.jpg/640px-Belukha_mountain.jpg" },
+            { name: "Телецкое озеро", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Lake_Teletskoye.jpg/640px-Lake_Teletskoye.jpg" },
+            { name: "Водопад Кивач", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Kivach_falls_in_winter.jpg/640px-Kivach_falls_in_winter.jpg" },
+            { name: "Кунгурская пещера", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Kungur_Ice_Cave_-_Brif_1.jpg/640px-Kungur_Ice_Cave_-_Brif_1.jpg" },
+            { name: "Сочинский дендрарий", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Sochi_Dendrarium.jpg/640px-Sochi_Dendrarium.jpg" },
+            { name: "Мраморный каньон", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Mramorniy_Canyon_Ruskeala.jpg/640px-Mramorniy_Canyon_Ruskeala.jpg" },
+            { name: "Вулкан Тятя", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Tyatya_volcano_2.jpg/640px-Tyatya_volcano_2.jpg" },
+            { name: "Озеро Селигер", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Seliger_lake.jpg/640px-Seliger_lake.jpg" },
+            { name: "Остров Врангеля", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Wrangel_Island_NASA.jpg/640px-Wrangel_Island_NASA.jpg" },
+            { name: "Красноярские столбы", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Krasnoyarsk_stolby.jpg/640px-Krasnoyarsk_stolby.jpg" },
+            { name: "Водопад Учар", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Uchar_Waterfall.jpg/640px-Uchar_Waterfall.jpg" },
+            { name: "Белые скалы", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Avan_rock.jpg/640px-Avan_rock.jpg" },
+            { name: "Озеро Кезеноям", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Kezenoyam_Lake.jpg/640px-Kezenoyam_Lake.jpg" },
+            { name: "Мыс Фиолент", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Fiolent_cape.jpg/640px-Fiolent_cape.jpg" },
+            { name: "Чарские пески", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Chara_sands.jpg/640px-Chara_sands.jpg" },
+            { name: "Вулкан Креницына", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Krenitsyn_Volcano.jpg/640px-Krenitsyn_Volcano.jpg" },
+            { name: "Озеро Джека Лондона", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Jack_London_Lake.jpg/640px-Jack_London_Lake.jpg" }
+        ];
+
+        // Переменные игры
+        let cards = [];
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let moves = 0;
+        let pairs = 0;
+        let timer = 0;
+        let timerInterval;
+        
+        // Элементы DOM
+        const board = document.getElementById('board');
+        const movesElement = document.getElementById('moves');
+        const pairsElement = document.getElementById('pairs');
+        const timerElement = document.getElementById('timer');
+        const restartButton = document.getElementById('restart');
+        const winModal = document.getElementById('win-modal');
+        const finalMovesElement = document.getElementById('final-moves');
+        const finalTimeElement = document.getElementById('final-time');
+        const playAgainButton = document.getElementById('play-again');
+        
+        // Инициализация игры
+        function initGame() {
+            // Очистить доску
+            board.innerHTML = '';
+            
+            // Сброс переменных
+            moves = 0;
+            pairs = 0;
+            timer = 0;
+            movesElement.textContent = moves;
+            pairsElement.textContent = pairs;
+            timerElement.textContent = timer;
+            
+            // Создать пары карточек
+            cards = [];
+            wonders.forEach((wonder, index) => {
+                cards.push({ ...wonder, id: index });
+                cards.push({ ...wonder, id: index });
+            });
+            
+            // Перемешать карточки
+            shuffleCards();
+            
+            // Создать карточки на доске
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.id = card.id;
+                
+                cardElement.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">?</div>
+                        <div class="card-back">
+                            <img src="${card.image}" alt="${card.name}" loading="lazy">
+                        </div>
+                    </div>
+                `;
+                
+                cardElement.addEventListener('click', flipCard);
+                board.appendChild(cardElement);
+            });
+            
+            // Запустить таймер
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timer++;
+                timerElement.textContent = timer;
+            }, 1000);
+        }
+        
+        // Перемешать карточки
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+        }
+        
+        // Перевернуть карточку
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+            if (this.classList.contains('matched')) return;
+            
+            this.classList.add('flipped');
+            
+            if (!hasFlippedCard) {
+                // Первая карточка
+                hasFlippedCard = true;
+                firstCard = this;
+            } else {
+                // Вторая карточка
+                hasFlippedCard = false;
+                secondCard = this;
+                
+                // Проверить совпадение
+                checkForMatch();
+                
+                // Увеличить счетчик ходов
+                moves++;
+                movesElement.textContent = moves;
+            }
+        }
+        
+        // Проверить совпадение карточек
+        function checkForMatch() {
+            const isMatch = firstCard.dataset.id === secondCard.dataset.id;
+            
+            if (isMatch) {
+                disableCards();
+                pairs++;
+                pairsElement.textContent = pairs;
+                
+                // Проверить завершение игры
+                if (pairs === wonders.length) {
+                    setTimeout(() => {
+                        clearInterval(timerInterval);
+                        finalMovesElement.textContent = moves;
+                        finalTimeElement.textContent = timer;
+                        winModal.style.display = 'flex';
+                    }, 500);
+                }
+            } else {
+                unflipCards();
+            }
+        }
+        
+        // Заблокировать совпавшие карточки
+        function disableCards() {
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            
+            resetBoard();
+        }
+        
+        // Перевернуть обратно несовпавшие карточки
+        function unflipCards() {
+            lockBoard = true;
+            
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                
+                resetBoard();
+            }, 1000);
+        }
+        
+        // Сбросить состояние доски
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+        
+        // Обработчики событий
+        restartButton.addEventListener('click', initGame);
+        playAgainButton.addEventListener('click', () => {
+            winModal.style.display = 'none';
+            initGame();
+        });
+        
+        // Запустить игру при загрузке
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
